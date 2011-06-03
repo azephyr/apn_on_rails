@@ -21,6 +21,8 @@ class APN::Notification < APN::Base
 
   belongs_to :device, :class_name => 'APN::Device'
 
+  @alert_child_properties = ["body", "action-loc-key", "loc-key", "loc-args", "launch-image"]
+
   # Stores the text alert message you want to send to the device.
   # 
   # If the message is over 150 characters long it will get truncated
@@ -49,6 +51,7 @@ class APN::Notification < APN::Base
   #   apn.apple_hast # => {"aps" => {"badge" => 0}}
   def apple_hash
     result = {}
+    alert_children = {}
     result['aps'] = {}
     result['aps']['alert'] = self.alert if self.alert
     result['aps']['badge'] = self.badge.to_i if self.badge
@@ -58,9 +61,18 @@ class APN::Notification < APN::Base
     end
     if self.custom_properties
       self.custom_properties.each do |key,value|
-        result["#{key}"] = "#{value}"
+        if @alert_child_properties.include?(key)
+          alert_children["#{key}"] = "#{value}"
+        else
+          result["#{key}"] = "#{value}"
+        end
       end
     end
+
+    if alert_children.size > 1
+      result['aps']['alert'] = alert_children
+    end
+
     result
   end
 
